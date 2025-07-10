@@ -121,7 +121,11 @@ export default function ChatPage() {
       <Header 
         onMenuClick={() => setSidebarOpen(true)}
         />
-      <Sidebar chats={chats} />
+      <Sidebar 
+        chats={chats}
+        isOpen={isSidebarOpen}
+        onClose={() => setSidebarOpen(false)} 
+          />
       {/* チャット表示エリア */}
       <div className="flex justify-center w-full overflow-y-auto px-6 py-4">
         <div className="w-full max-w-3xl space-y-10"> {/* ← 画面中央60% */}

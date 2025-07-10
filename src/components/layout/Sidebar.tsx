@@ -8,12 +8,17 @@ type Chat = {
 };
 
 type SidebarProps = {
-  chats: Chat[]; // ← 外から履歴を渡す or useEffectでfetchしてもOK
+  chats: Chat[];
+  isOpen: boolean;
+  onClose: () => void;
 //   onNewChat: () => void;
 };
 
-export default function Sidebar({ chats }: SidebarProps) {
-  const [isOpen, setIsOpen] = useState(false);
+export default function Sidebar({ 
+    chats, 
+    isOpen, 
+    onClose 
+}: SidebarProps) {
   const [search, setSearch] = useState("");
   const router = useRouter();
 
@@ -27,17 +32,9 @@ export default function Sidebar({ chats }: SidebarProps) {
       {isOpen && (
         <div
           className="fixed inset-0 bg-black bg-opacity-40 z-40"
-          onClick={() => setIsOpen(false)}
+          onClick={onClose}
         />
       )}
-
-      {/* ハンバーガーメニュー */}
-      <button
-        onClick={() => setIsOpen(true)}
-        className="fixed top-4 left-4 z-50 text-white bg-neutral-800 p-2 rounded-md"
-      >
-        ☰
-      </button>
 
       {/* サイドバー本体 */}
       <div
@@ -52,7 +49,7 @@ export default function Sidebar({ chats }: SidebarProps) {
           <button
             onClick={() => {
             //   onNewChat();
-              setIsOpen(false);
+              onClose
             }}
             className="w-full bg-neutral-700 hover:bg-neutral-600 px-4 py-2 rounded-md"
           >
@@ -76,7 +73,7 @@ export default function Sidebar({ chats }: SidebarProps) {
                 className="w-full text-left px-3 py-2 rounded hover:bg-neutral-700"
                 onClick={() => {
                   router.push(`/${chat.chatId}`); // 適切なルートに修正してください
-                  setIsOpen(false);
+                  onClose
                 }}
               >
                 {chat.chatname}
@@ -88,7 +85,7 @@ export default function Sidebar({ chats }: SidebarProps) {
           <button
             onClick={() => {
               router.push("/admin");
-              setIsOpen(false);
+              onClose
             }}
             className="mt-6 w-full bg-red-600 hover:bg-red-500 px-4 py-2 rounded-md"
           >
