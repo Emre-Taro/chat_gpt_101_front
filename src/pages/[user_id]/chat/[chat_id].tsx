@@ -2,14 +2,21 @@
 
 import { useRouter } from 'next/router';
 import React, { useEffect, useState, useRef } from 'react';
+import { FaPlus, FaSlidersH, FaMicrophone, FaWaveSquare } from "react-icons/fa";
 
 import Sidebar from "@/components/layout/Sidebar";
 import Header from '@/components/layout/Header';
 
 
-type Message = {
+export type Message = {
   sender: 'user' | 'assistant';
   text: string;
+};
+
+export type Chat = {
+  chatId: string;
+  chatname: string;
+  userId: string;
 };
 
 export default function ChatPage() {
@@ -21,7 +28,7 @@ export default function ChatPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const [isSidebarOpen, setSidebarOpen] = useState(false);
-  const [chats, setChats] = useState<{ chatId: string; chatname: string }[]>([]);
+  const [chats, setChats] = useState<Chat[]>([]);
 
   // Auth check
   useEffect(() => {
@@ -42,7 +49,17 @@ export default function ChatPage() {
   if (!user_id || !chat_id) return;
   const fetchMessages = async () => {
     try {
-      const response = await fetch(`http://localhost:8000/${user_id}/chat/${chat_id}/message`);
+      const token = localStorage.getItem('token');
+      const response = await fetch(`http://localhost:8000/${user_id}/chat/${chat_id}/message`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      if (response.status === 404) {
+        setMessages([]);  // 新しいチャットにはメッセージがない
+        return;
+      } 
       if (!response.ok) {
         setError("Failed to fetch messages");
         return;
@@ -63,6 +80,87 @@ export default function ChatPage() {
   fetchMessages();
 }, [user_id, chat_id]);
 
+useEffect(() => {
+  if (!user_id) return;
+  console.log("user_id:", user_id);
+  const fetchChat = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`http://localhost:8000/${user_id}/chats`, {
+        method: "GET",
+        headers: {
+          'Content-Type': "application/json",
+          'Authorization': `Bearer ${token}`,
+        }
+      });
+      if (!response.ok){
+        setError("Failed to fetch chats");
+        return;
+      }
+
+      const chatData = await response.json();
+      console.log("Fetched chat data:", chatData);
+      const parseChats: Chat[] = Array.isArray(chatData.chats)
+        ? chatData.chats.map((chat: any) => ({
+            chatId: chat.chatId,
+            chatname: chat.chatname,
+            userId: chat.userId,
+          }))
+        : [];
+      setChats(parseChats);
+    } catch (error) {
+      if (error instanceof Error) {
+        setError(error.message);
+      } else {
+        setError('An unknown error occurred.');
+      }
+    }
+  };
+
+  fetchChat();
+}, [user_id])
+
+  const onNewChat = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      setError("Not authenticated");
+      return;
+    }
+    try {
+      const response = await fetch(`http://localhost:8000/${user_id}/chats`, {
+        method: "POST",
+        headers: {
+          'Content-Type': "application/json",
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          chatId: chat_id,
+          userId: user_id,
+          chatname: "Default Chat"
+        })
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        setError(errorData.detail || "An error occurred during chat.");
+        return;
+      }
+      const newChat = await response.json();
+      setChats(prev => [...prev, {
+        chatId: newChat.chatId,
+        chatname: newChat.chatname,
+        userId: newChat.userId,
+      }])
+      router.push(`/${user_id}/chat/${newChat.chatId}`);
+      
+    } catch(error) {
+      if(error instanceof Error) {
+        setError(error.message);
+      } else {
+        setError('An unknown error occurred.');
+      }
+    }
+  }
+
   // add new message when the button is clicked
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -71,10 +169,12 @@ export default function ChatPage() {
     const currentInput = input;
     setInput('');
 
+    const token = localStorage.getItem('token');
     try {
       const response = await fetch(`http://localhost:8000/${user_id}/chat/${chat_id}/message`, {
         method: "POST",
         headers: {
+            'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json',
         },
         body: JSON.stringify({
@@ -117,17 +217,19 @@ export default function ChatPage() {
 
 
   return (
-    <div className="flex flex-col h-screen bg-neutral-900 text-white">
+    <div className="flex flex-col bg-[#252525ff] text-white min-h-screen p-4 ">
       <Header 
         onMenuClick={() => setSidebarOpen(true)}
+        onNewChat={onNewChat}
         />
       <Sidebar 
         chats={chats}
         isOpen={isSidebarOpen}
         onClose={() => setSidebarOpen(false)} 
+        onNewChat = {onNewChat}
           />
       {/* チャット表示エリア */}
-      <div className="flex justify-center w-full overflow-y-auto px-6 py-4">
+      <div className="flex justify-center w-full overflow-y-auto px-6 py-4 pb-[130px]">
         <div className="w-full max-w-3xl space-y-10"> {/* ← 画面中央60% */}
           {messages.map((msg, idx) => {
             const isUser = msg.sender === 'user';
@@ -164,22 +266,47 @@ export default function ChatPage() {
       {/* 入力フォーム */}
       <form
         onSubmit={handleSubmit}
-        className="h-[10vh] px-6 py-3 flex items-center justify-center gap-3 mb-8"
+        className="fixed bottom-0 left-0 w-full px-6 py-4 flex justify-center z-50"
       >
-        <input
-          type="text"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          className="w-[50%] h-16 bg-neutral-700 text-white px-4 py-3 rounded-2xl outline-none"
-          placeholder="メッセージを入力..."
-        />
-        <button
-          type="submit"
-          className="bg-neutral-600 hover:bg-neutral-500 text-white px-4 py-2 rounded-md"
-        >
-          ask
-        </button>
+        <div className="w-[650px] bg-[#2e2e2e] text-white rounded-[24px] px-6 py-5 flex flex-col gap-2">
+          {/* 入力欄（上段） */}
+          <input
+            type="text"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            placeholder="質問してみましょう"
+            className="bg-transparent outline-none text-white placeholder-gray-400 text-sm mb-[5px]"
+          />
+
+          {/* ボタン群（下段） */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3 text-gray-300">
+              <button type="button" className="hover:text-white text-xl">
+                <FaPlus />
+              </button>
+              <button type="button" className="flex items-center space-x-1 text-sm hover:text-white">
+                <FaSlidersH />
+                <span>ツール</span>
+              </button>
+              <button type="button" className="hover:text-white text-xl">
+                <FaMicrophone />
+              </button>
+              <button type="button" className="hover:text-white text-xl">
+                <FaWaveSquare />
+              </button>
+            </div>
+
+            <button
+              type="submit"
+              className="bg-neutral-600 hover:bg-neutral-500 text-white px-4 py-2 rounded-md text-sm"
+            >
+              ask
+            </button>
+          </div>
+        </div>
       </form>
+
+
     </div>
   );
 }

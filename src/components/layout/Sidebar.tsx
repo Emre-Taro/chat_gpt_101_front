@@ -1,37 +1,36 @@
 // components/Sidebar.tsx
 import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
+import type { Chat } from "@/pages/[user_id]/chat/[chat_id]";
 
-type Chat = {
-  chatId: string;
-  chatname: string;
-};
 
 type SidebarProps = {
   chats: Chat[];
   isOpen: boolean;
   onClose: () => void;
-//   onNewChat: () => void;
+  onNewChat: () => void;
 };
 
 export default function Sidebar({ 
     chats, 
     isOpen, 
-    onClose 
+    onClose,
+    onNewChat
 }: SidebarProps) {
   const [search, setSearch] = useState("");
   const router = useRouter();
 
-  const filteredChats = chats.filter(chat =>
-    chat.chatname.toLowerCase().includes(search.toLowerCase())
-  );
+  const chatsArray = Array.isArray(chats) ? chats : [];
+  const filteredChats = chatsArray.filter(chat => 
+    (chat.chatname || "").toLowerCase().includes(search.toLowerCase())
+);
 
   return (
     <>
       {/* 背景の黒幕 */}
       {isOpen && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-40 z-40"
+          className="fixed inset-0 bg-opacity-40 z-40"
           onClick={onClose}
         />
       )}
@@ -48,8 +47,8 @@ export default function Sidebar({
           {/* 新しいチャット */}
           <button
             onClick={() => {
-            //   onNewChat();
-              onClose
+              onNewChat();
+              onClose();
             }}
             className="w-full bg-neutral-700 hover:bg-neutral-600 px-4 py-2 rounded-md"
           >
@@ -72,8 +71,8 @@ export default function Sidebar({
                 key={chat.chatId}
                 className="w-full text-left px-3 py-2 rounded hover:bg-neutral-700"
                 onClick={() => {
-                  router.push(`/${chat.chatId}`); // 適切なルートに修正してください
-                  onClose
+                  router.push(`/${chat.userId}/chat/${chat.chatId}`); // 適切なルートに修正してください
+                  onClose();
                 }}
               >
                 {chat.chatname}
@@ -85,7 +84,7 @@ export default function Sidebar({
           <button
             onClick={() => {
               router.push("/admin");
-              onClose
+              onClose();
             }}
             className="mt-6 w-full bg-red-600 hover:bg-red-500 px-4 py-2 rounded-md"
           >
