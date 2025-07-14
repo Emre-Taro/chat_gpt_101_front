@@ -14,14 +14,19 @@ export default function DeleteBanner({
   if (!openDeleteBanner) return null;
 
   return (
-    <div className="fixed inset-0 bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-sm shadow-lg">
-        <h3 className="text-lg font-semibold mb-4">チャットを削除しますか？</h3>
-        <p className="text-sm text-gray-600 mb-6">この操作は取り消せません。</p>
-        <div className="flex justify-end gap-2">
+    <div className="fixed inset-0 backdrop-blur-sm bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-[#1a1a1a] p-6 w-full max-w-sm shadow-lg border border-white/10" style={{ borderRadius: '30px' }} >
+        <h3 className="text-lg font-semibold text-white mb-4">
+          チャットを削除しますか？
+        </h3>
+        <p className="text-sm text-gray-400 mb-6">
+          この操作は取り消せません。
+        </p>
+        <div className="flex justify-end gap-3 mt-10">
           <button
             onClick={onClose}
-            className="px-4 py-2 bg-gray-300 hover:bg-gray-400 rounded"
+            className="px-3 py-1 bg-transparent text-white border border-white hover:bg-white hover:text-black"
+            style={{ borderRadius: '30px' }}
           >
             キャンセル
           </button>
@@ -30,7 +35,8 @@ export default function DeleteBanner({
               onConfirm();
               onClose();
             }}
-            className="px-4 py-2 bg-red-600 text-white hover:bg-red-700 rounded"
+            className="px-3 py-1 bg-red-600 text-white hover:bg-red-700 rounded"
+            style={{ borderRadius: '30px' }}
           >
             削除する
           </button>

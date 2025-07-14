@@ -226,7 +226,6 @@ useEffect(() => {
           chatId: chat_id,
           userId: user_id,
           content: currentInput,
-          chatname: "Default Chat", // or use a variable if you have chat names
           role: "user"
         })
       });
@@ -236,7 +235,16 @@ useEffect(() => {
         return;
       }
       const data = await response.json();
-      console.log(data);
+        // 最初の1回目のメッセージ送信時のみ、chatname を更新
+      if (data.generated_title && data.chatId) {
+        setChats(prev =>
+          prev.map(chat =>
+            chat.chatId === data.chatId
+              ? { ...chat, chatname: data.generated_title }
+              : chat
+          )
+        );
+      }
 
       if (!data.user || !data.assistant) {
         setError('Invalid response from server.');
@@ -286,7 +294,7 @@ useEffect(() => {
                 />
           )}
       {/* チャット表示エリア */}
-      <div className="flex justify-center w-full overflow-y-auto px-6 py-4 pb-[130px]">
+      <div className="flex justify-center w-full overflow-y-auto px-6 py-4 pb-[130px] pt-[100px]">
         <div className="w-full max-w-3xl space-y-10"> {/* ← 画面中央60% */}
           {messages.map((msg, idx) => {
             const isUser = msg.sender === 'user';

@@ -23,8 +23,6 @@ export default function Sidebar({
     onDeleteClick,
 }: SidebarProps) {
   const [search, setSearch] = useState("");
-  
-    // const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
   const router = useRouter();
 
   const chatsArray = Array.isArray(chats) ? chats : [];
@@ -82,7 +80,7 @@ export default function Sidebar({
           {/* チャット履歴 */}
           <div className="space-y-2 max-h-[60vh] overflow-y-auto">
             {filteredChats.map((chat) => (
-              <div key={chat.chatId}>
+              <div key={chat.chatId} className = "group flex items-center">
                 <button
                   className="w-full text-left px-3 py-2 rounded hover:bg-neutral-700"
                   onClick={() => {
@@ -92,10 +90,12 @@ export default function Sidebar({
               >
                 {chat.chatname}
               </button>
-                  <MoreHorizIcon
-                    className="text-white cursor-pointer ml-2"
-                    onClick={() => onDeleteClick(chat.chatId)}
-                  />
+                  <div className="ml-2 hidden group-hover:block">
+                    <MoreHorizIcon
+                      className="text-white cursor-pointer"
+                      onClick={() => onDeleteClick(chat.chatId)}
+                    />
+                  </div>
               </div>
             ))}
           </div>
