@@ -6,6 +6,8 @@ import { FaPlus, FaSlidersH, FaMicrophone, FaWaveSquare } from "react-icons/fa";
 
 import Sidebar from "@/components/layout/Sidebar";
 import Header from '@/components/layout/Header';
+import DeleteBanner from '@/components/layout/deleteChatBanner';
+
 
 
 export type Message = {
@@ -29,6 +31,9 @@ export default function ChatPage() {
 
   const [isSidebarOpen, setSidebarOpen] = useState(false);
   const [chats, setChats] = useState<Chat[]>([]);
+
+  const [openDeleteBanner, setOpenDeleteBanner] = useState(false);
+  const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
 
   // Auth check
   useEffect(() => {
@@ -80,6 +85,7 @@ export default function ChatPage() {
   fetchMessages();
 }, [user_id, chat_id]);
 
+// get chat data
 useEffect(() => {
   if (!user_id) return;
   console.log("user_id:", user_id);
@@ -120,11 +126,12 @@ useEffect(() => {
   fetchChat();
 }, [user_id])
 
-  const onNewChat = async () => {
+  // create new chat
+  const onNewChat = async (): Promise<Chat | null> => {
     const token = localStorage.getItem('token');
     if (!token) {
       setError("Not authenticated");
-      return;
+      return null;
     }
     try {
       const response = await fetch(`http://localhost:8000/${user_id}/chats`, {
@@ -134,7 +141,7 @@ useEffect(() => {
           'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({
-          chatId: chat_id,
+          chatId: crypto.randomUUID(),
           userId: user_id,
           chatname: "Default Chat"
         })
@@ -142,7 +149,7 @@ useEffect(() => {
       if (!response.ok) {
         const errorData = await response.json();
         setError(errorData.detail || "An error occurred during chat.");
-        return;
+        return null;
       }
       const newChat = await response.json();
       setChats(prev => [...prev, {
@@ -151,15 +158,53 @@ useEffect(() => {
         userId: newChat.userId,
       }])
       router.push(`/${user_id}/chat/${newChat.chatId}`);
-      
+      return newChat;
     } catch(error) {
       if(error instanceof Error) {
         setError(error.message);
       } else {
         setError('An unknown error occurred.');
       }
+      return null;
     }
   }
+
+  const handleConfirmDelete = async () => {
+    if (!selectedChatId || !user_id) return;
+
+    try {
+      const token = localStorage.getItem("token");
+      const response = await fetch(`http://localhost:8000/${user_id}/chat/${selectedChatId}`, {
+        method: "DELETE",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json"
+        }
+      });
+
+      if (!response.ok) {
+        setError("チャット削除に失敗しました。");
+        return;
+      }
+
+      // 削除したチャットをstateから除外
+      setChats(prev => prev.filter(chat => chat.chatId !== selectedChatId));
+
+      if (chat_id === selectedChatId) {
+        const newChat = await onNewChat();
+        if (newChat) {
+          router.push(`/${user_id}/chat/${newChat.chatId}`);
+        } else {
+          router.push(`/`); // when fail, jump to the home
+        }
+      }
+
+      setSelectedChatId(null);
+    } catch (error) {
+      console.error(error);
+      setError("削除中にエラーが発生しました。");
+    }
+  };
 
   // add new message when the button is clicked
   const handleSubmit = async (e: React.FormEvent) => {
@@ -227,7 +272,19 @@ useEffect(() => {
         isOpen={isSidebarOpen}
         onClose={() => setSidebarOpen(false)} 
         onNewChat = {onNewChat}
+        onDeleteClick={(chatId) => {
+          setSelectedChatId(chatId);
+          setOpenDeleteBanner(true);
+        }}
           />
+        {/* 削除ポップアップ */}
+          {openDeleteBanner && (
+            <DeleteBanner 
+                openDeleteBanner={openDeleteBanner}
+                onClose={() => setOpenDeleteBanner(false)}
+                onConfirm={handleConfirmDelete} 
+                />
+          )}
       {/* チャット表示エリア */}
       <div className="flex justify-center w-full overflow-y-auto px-6 py-4 pb-[130px]">
         <div className="w-full max-w-3xl space-y-10"> {/* ← 画面中央60% */}
@@ -266,7 +323,7 @@ useEffect(() => {
       {/* 入力フォーム */}
       <form
         onSubmit={handleSubmit}
-        className="fixed bottom-0 left-0 w-full px-6 py-4 flex justify-center z-50"
+        className="fixed bottom-0 left-0 w-full px-6 py-4 flex justify-center z-10"
       >
         <div className="w-[650px] bg-[#2e2e2e] text-white rounded-[24px] px-6 py-5 flex flex-col gap-2">
           {/* 入力欄（上段） */}
@@ -279,7 +336,7 @@ useEffect(() => {
           />
 
           {/* ボタン群（下段） */}
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between z-10">
             <div className="flex items-center gap-3 text-gray-300">
               <button type="button" className="hover:text-white text-xl">
                 <FaPlus />

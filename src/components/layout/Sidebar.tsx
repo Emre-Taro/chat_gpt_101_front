@@ -3,27 +3,42 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import type { Chat } from "@/pages/[user_id]/chat/[chat_id]";
 
+import MoreHorizIcon from '@mui/icons-material/MoreHoriz';
+
+
 
 type SidebarProps = {
   chats: Chat[];
   isOpen: boolean;
   onClose: () => void;
   onNewChat: () => void;
+  onDeleteClick: (chatId: string) => void;
 };
 
 export default function Sidebar({ 
     chats, 
     isOpen, 
     onClose,
-    onNewChat
+    onNewChat,
+    onDeleteClick,
 }: SidebarProps) {
   const [search, setSearch] = useState("");
+  
+    // const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
   const router = useRouter();
 
   const chatsArray = Array.isArray(chats) ? chats : [];
   const filteredChats = chatsArray.filter(chat => 
     (chat.chatname || "").toLowerCase().includes(search.toLowerCase())
 );
+  
+// const handleDelete = () => {
+//     if (!selectedChatId) return;
+//     console.log("削除するチャットID:", selectedChatId);
+//     // ここで削除API呼び出しなどを行う
+//     setOpenDeleteBanner(false);
+//     setSelectedChatId(null);
+//   };
 
   return (
     <>
@@ -67,18 +82,24 @@ export default function Sidebar({
           {/* チャット履歴 */}
           <div className="space-y-2 max-h-[60vh] overflow-y-auto">
             {filteredChats.map((chat) => (
-              <button
-                key={chat.chatId}
-                className="w-full text-left px-3 py-2 rounded hover:bg-neutral-700"
-                onClick={() => {
-                  router.push(`/${chat.userId}/chat/${chat.chatId}`); // 適切なルートに修正してください
-                  onClose();
-                }}
+              <div key={chat.chatId}>
+                <button
+                  className="w-full text-left px-3 py-2 rounded hover:bg-neutral-700"
+                  onClick={() => {
+                    router.push(`/${chat.userId}/chat/${chat.chatId}`); // 適切なルートに修正してください
+                    onClose();
+                  }}
               >
                 {chat.chatname}
               </button>
+                  <MoreHorizIcon
+                    className="text-white cursor-pointer ml-2"
+                    onClick={() => onDeleteClick(chat.chatId)}
+                  />
+              </div>
             ))}
           </div>
+          
 
           {/* Adminページ */}
           <button
