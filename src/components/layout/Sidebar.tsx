@@ -27,7 +27,7 @@ export default function Sidebar({
 
   const chatsArray = Array.isArray(chats) ? chats : [];
   const filteredChats = chatsArray.filter(chat => 
-    (chat.chatname || "").toLowerCase().includes(search.toLowerCase())
+    (chat.title || "").toLowerCase().includes(search.toLowerCase())
 );
   
 // const handleDelete = () => {
@@ -88,7 +88,7 @@ export default function Sidebar({
                     onClose();
                   }}
               >
-                {chat.chatname}
+                {chat.title}
               </button>
                   <div className="ml-2 hidden group-hover:block">
                     <MoreHorizIcon

@@ -17,7 +17,7 @@ export type Message = {
 
 export type Chat = {
   chatId: string;
-  chatname: string;
+  title: string;
   userId: string;
 };
 
@@ -109,7 +109,7 @@ useEffect(() => {
       const parseChats: Chat[] = Array.isArray(chatData.chats)
         ? chatData.chats.map((chat: any) => ({
             chatId: chat.chatId,
-            chatname: chat.chatname,
+            title: chat.title,
             userId: chat.userId,
           }))
         : [];
@@ -143,7 +143,7 @@ useEffect(() => {
         body: JSON.stringify({
           chatId: crypto.randomUUID(),
           userId: user_id,
-          chatname: "Default Chat"
+          title: "Default Chat"
         })
       });
       if (!response.ok) {
@@ -154,7 +154,7 @@ useEffect(() => {
       const newChat = await response.json();
       setChats(prev => [...prev, {
         chatId: newChat.chatId,
-        chatname: newChat.chatname,
+        title: newChat.title,
         userId: newChat.userId,
       }])
       router.push(`/${user_id}/chat/${newChat.chatId}`);
@@ -235,12 +235,12 @@ useEffect(() => {
         return;
       }
       const data = await response.json();
-        // 最初の1回目のメッセージ送信時のみ、chatname を更新
+        // 最初の1回目のメッセージ送信時のみ、title を更新
       if (data.generated_title && data.chatId) {
         setChats(prev =>
           prev.map(chat =>
             chat.chatId === data.chatId
-              ? { ...chat, chatname: data.generated_title }
+              ? { ...chat, title: data.generated_title }
               : chat
           )
         );
